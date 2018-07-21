@@ -1,8 +1,9 @@
 pragma solidity ^0.4.21;
 
-import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
+import "openzeppelin-solidity/token/ERC20/BurnableToken.sol";
+import "openzeppelin-solidity/ownership/Ownable.sol";
 
-contract MercToken is BurnableToken {
+contract MercToken is BurnableToken, Ownable {
   string public name = "MercesCapital";
   string public symbol = "MERC";
   uint8 public decimals = 18;
