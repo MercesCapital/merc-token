@@ -11,3 +11,7 @@ This repository contains the MERC token smart-contract
 We use Truffle to compile, test, and deploy smart contracts
 
 MERC is also created with the OpenZeppelin framework
+
+TODO:
+
+Write tests for different crowdsale use cases

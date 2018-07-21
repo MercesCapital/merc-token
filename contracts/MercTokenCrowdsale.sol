@@ -2,19 +2,19 @@ pragma solidity ^0.4.21;
 
 import "./MercToken.sol";
 import "openzeppelin-solidity/token/ERC20/ERC20.sol";
-import "openzeppelin-solidity/crowdsale/validation/TimedCrowdsale.sol";
-import "openzeppelin-solidity/ownership/Ownable.sol";
+import "openzeppelin-solidity/crowdsale/distribution/FinalizableCrowdsale.sol";
+import "openzeppelin-solidity/crowdsale/validation/PostDeliveryCrowdsale.sol";
 
-contract MercTokenCrowdsale is TimedCrowdsale, Ownable {
+contract MercTokenCrowdsale is FinalizableCrowdsale, PostDeliveryCrowdsale, Ownable {
 
     uint8 public constant decimals = 18;
 
     // There are 100,000,000 MERC Tokens
     uint256 public maxCrowdSaleTokens = 70000000 * (10 ** uint256(decimals)); // 100 Million Tokens 
-    uint256 public tierOneTokens = 7000000 * (10 ** uint256(decimals)); // 7 Million tokens will be sold during tierOne portion of sale
-    uint256 public tierTwoTokens = 10500000 * (10 ** uint256(decimals)); // 10.5 Million tokens will be sold duing tierTwo portion of sale
-    uint256 public preSaleTokens = 17500000 * (10 ** uint256(decimals)); // 35% of tokens will be sold during private and pre-sale
-    uint256 public privateSaleTokens = 35000000 * (10 ** uint256(decimals)); // 35% of tokens will be sold during private and pre-sale
+    uint256 public tierOneTokens = 7000000 * (10 ** uint256(decimals)); // 7 Million MERC tokens will be sold during tierOne portion of sale
+    uint256 public tierTwoTokens = 10500000 * (10 ** uint256(decimals)); // 10.5 Million MERC tokens will be sold duing tierTwo portion of sale
+    uint256 public preSaleTokens = 17500000 * (10 ** uint256(decimals)); // 17.5 Million MERC of tokens will be sold during private and pre-sale
+    // uint256 public privateSaleTokens = 35000000 * (10 ** uint256(decimals)); // 35% of tokens will be sold during private and pre-sale
     uint256 public publicSaleTokens = 35000000 * (10 ** uint256(decimals)); // 35% of Tokens will be sold during public crowdsale
     uint256 public teamTokens = 30000000 * (10 ** uint256(decimals)); // 30% of Tokens will be given to Team, Consultants, Advisors, etc
 
@@ -29,6 +29,9 @@ contract MercTokenCrowdsale is TimedCrowdsale, Ownable {
     uint public constant USD_CENT_PER_MERC = 17;
     uint public constant MIN_CONTRIBUTION = 0.01 ether;
 
+    // maximum amount of funds to be raised in weis
+    uint256 public maxEtherCap; // 73,265 ether
+
     // various rates Temporary
     uint public tierOneRate = 1910880; // At $0.25 per token in USD 
     uint public tierTwoRate = 1308821; // At $0.365 per token in USD
@@ -40,7 +43,9 @@ contract MercTokenCrowdsale is TimedCrowdsale, Ownable {
     enum CrowdsaleStage { TierOne, TierTwo, PreSale, ICO }
     CrowdsaleStage public stage = CrowdsaleStage.TierOne; // By default it's pre-sale
 
+    // TODO: PLEASE CHANGE!!!!
     address wallet = 0x12344563;
+    address teamWallet = 0x123456789;
 
     // Deploys the ERC20 token. Automatically called when crowdsale contract is deployed.
     mercToken = new MercToken(); 
@@ -101,12 +106,22 @@ contract MercTokenCrowdsale is TimedCrowdsale, Ownable {
       rate = _rate;
     }
 
+    // Checks whether maxEtherCap is reached
+    function maxReached() public constant returns (bool) {
+      return weiRaised == maxEtherCap;
+    }
+
     // Once you gather more details from Matt, finish contract with finalise function for distro to others
-    function finish() public onlyOwner {
+    function finalization() internal {
       uint extraTokens = maxCrowdSaleTokens - weiRaised;
+      // If it's past closingICOTime and we have extra tokens, burn the extra tokens
       if ((now > closingICOTime) && (extraTokens > 0)) {
         mercToken.burn(extraTokens);
       }
+      // transfer tokens for team over to team
+      token.transfer(teamTokens, teamWallet);
+      // Will be called only after crowdsale ends
+      withdrawTokens();
     }
 
 
